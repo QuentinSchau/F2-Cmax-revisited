@@ -1,0 +1,97 @@
+{
+  "generate": {
+    "seed": 1,
+    "instances": [
+      {
+        "basePath": "./instances/OtherDistribution/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },
+      {
+        "basePath": "./instances/OtherDistribution/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "negative_binomial",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/OtherDistribution/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "geometric",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/OtherDistribution/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "poisson",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/OtherDistribution/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "exponential",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/OtherDistribution/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "gamma",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/OtherDistribution/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "weibull",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/OtherDistribution/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "lognormal",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      }
+    ]
+  }
+}
