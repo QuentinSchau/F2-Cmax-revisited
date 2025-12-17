@@ -41,8 +41,6 @@ In the job description, the processing time `pj1` is the processing on machine M
 
 To run the F2-Cmax-revisited project, execute the binary program located in either `./bin/release` or `./bin/debug` directory. You must provide a configuration file. For reference, you can find two example files: `example_config_generate.json` and `example_config_solve.json`.
 
-All instances used in the paper are in "instances.tar.bz2"
-
 ### Configuration File (JSON)
 
 The project uses JSON files as configuration files. Below, we describe the structure of these files and how to use them.
