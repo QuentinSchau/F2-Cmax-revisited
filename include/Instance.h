@@ -50,6 +50,7 @@ private:
     LAW distribution=UNIFORM;
     double p_max_A = 0.0;
     double p_max_B = 0.0;
+    double p_max = 0.0;
     double sumPA1 = 0.0;
     double sumPA2 = 0.0;
     double sumPB1 = 0.0;
@@ -73,14 +74,15 @@ public:
         jobsSmallerOnM1.clear(); jobsSmallerOnM2.clear();
     }
     void addJob(double pi1, double pi2) {
+        p_max = std::max(p_max,std::max(pi1,pi2));
         if (pi1<pi2) {
-            p_max_A = std::max(p_max_A,std::max(pi1,pi2));
+            p_max_A = std::max(p_max_A,pi1);
             sumPA1 += pi1;
             sumPA2 += pi2;
             jobsSmallerOnM1.emplace_back(pi1,pi2);
         }
         else {
-            p_max_B = std::max(p_max_B,std::max(pi1,pi2));
+            p_max_B = std::max(p_max_B,pi2);
             sumPB1 += pi2;
             sumPB2 += pi1;
             jobsSmallerOnM2.emplace_back(pi2,pi1); //add the job directly regarding the reverse property
@@ -104,6 +106,7 @@ public:
 
     [[nodiscard]] double getPMaxA() const { return p_max_A; }
     [[nodiscard]] double getPMaxB() const { return p_max_B; }
+    [[nodiscard]] double getPMax() const { return p_max; }
 
     [[nodiscard]] double getSumPa1() const { return sumPA1; }
     [[nodiscard]] double getSumPa2() const { return sumPA2; }

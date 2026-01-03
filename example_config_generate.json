@@ -91,6 +91,193 @@
             "sup": 1000
           }
         }
+      },{
+        "basePath": "./instances/N100/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 100
+          }
+        }
+      },{
+        "basePath": "./instances/N100/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/N100/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 10000
+          }
+        }
+      },{
+        "basePath": "./instances/N100/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 100000
+          }
+        }
+      },{
+        "basePath": "./instances/N1000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 100
+          }
+        }
+      },{
+        "basePath": "./instances/N1000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/N1000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 10000
+          }
+        }
+      },{
+        "basePath": "./instances/N1000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 1000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 100000
+          }
+        }
+      },{
+        "basePath": "./instances/N10000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 10000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 100
+          }
+        }
+      },{
+        "basePath": "./instances/N10000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 10000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/N10000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 10000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 10000
+          }
+        }
+      },{
+        "basePath": "./instances/N10000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 10000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 100000
+          }
+        }
+      },{
+        "basePath": "./instances/N100000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 100
+          }
+        }
+      },{
+        "basePath": "./instances/N100000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 1000
+          }
+        }
+      },{
+        "basePath": "./instances/N100000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 10000
+          }
+        }
+      },{
+        "basePath": "./instances/N100000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 100000
+          }
+        }
+      },{
+        "basePath": "./instances/N100000/",
+        "numberInstance": 100,
+        "paramInstance": {
+          "n": 100000,
+          "distribution": "uniform",
+          "pi": {
+            "inf": 1,
+            "sup": 1000000
+          }
+        }
       }
     ]
   }

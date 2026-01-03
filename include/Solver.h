@@ -62,7 +62,8 @@ public:
         endSolve = std::chrono::steady_clock::now();
         time_elapsed_johnson = std::chrono::duration<double>{endSolve - start};
         auto cmax3 = evaluate();
-        if (useRevisitedAlgo && std::fabs(cmax1-cmax3) > 1E-6) throw F2CmaxException(("Not same Cmax: revisited ->" + std::to_string(cmax1) + " johnson: " + std::to_string(cmax3)).c_str());
+        if (useRevisitedAlgo && std::fabs(cmax1-cmax3) > 1E-6)
+            throw F2CmaxException(("Not same Cmax: revisited ->" + std::to_string(cmax1) + " johnson: " + std::to_string(cmax3)).c_str());
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
         bool conditionProp3 = instance->getSumPb1() <= instance->getSumPb2() - instance->getPMaxB();
         bool conditionProp5 = instance->getSumPa1()+instance->getSumPb2() <= instance->getSumPa2() + instance->getSumPb1() - std::max(instance->getPMaxA(),instance->getPMaxB());
@@ -102,7 +103,8 @@ public:
         }
         size_t k_p = k == 0 ? k : k-1;
         // now find the smallest index with different processing time
-        while (--k_p>0) {
+        while (k_p-->0) {
+            assert(k_p < listJob.size());
             if (listJob[k_p].first != listJob[k_p+1].first) break;
         }
         // find the greatest index with different processing time
@@ -212,7 +214,7 @@ public:
 
     size_t find_smallest_k(std::vector<Instance::Job> & listJobs) {
         // take the 10th jobs
-        double estimated_pj = std::ceil(std::max(instance->getPMaxA(),instance->getPMaxB()) / instance->getNbJobs() * 10);
+        double estimated_pj = std::ceil(instance->getPMax() / instance->getNbJobs() * 10);
         // split the list of jobs in two, those with a pj smaller than the estimate one and the other
         Instance::Job pivot_Job = {estimated_pj,estimated_pj};
         size_t loopIndexBegin = 0;
