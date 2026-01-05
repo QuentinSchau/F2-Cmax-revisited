@@ -43,29 +43,29 @@ public:
     explicit Solver(Instance* instance,bool useRevisitedAlgo) : instance(instance),useRevisitedAlgo(useRevisitedAlgo), time_elapsed_johnson(0),time_elapsed_revisited_johnson(0), pivotRule(BFPRT) {}
 
     void solve() {
+        // shuffle list jobs to start from scratch
+        std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
+        std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
+        auto start = std::chrono::steady_clock::now();
+        JohnsonAlgorithm();
+        auto cmax3 = evaluate();
+        auto endSolve{std::chrono::steady_clock::now()};
+        time_elapsed_johnson = std::chrono::duration<double>{endSolve - start};
+
         if (useRevisitedAlgo) {
             // // shuffle list jobs to start from scratch
             std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
             std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
         }
-        auto start = std::chrono::steady_clock::now();
+        start = std::chrono::steady_clock::now();
         if (useRevisitedAlgo) revisitedAlgorithm();
         auto cmax1 = evaluate();
-        auto endSolve{std::chrono::steady_clock::now()};
-        time_elapsed_revisited_johnson = std::chrono::duration<double>{endSolve - start};
-
-
-        // shuffle list jobs to start from scratch
-        std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
-        std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
-        start = std::chrono::steady_clock::now();
-        JohnsonAlgorithm();
-        auto cmax3 = evaluate();
         endSolve = std::chrono::steady_clock::now();
-        time_elapsed_johnson = std::chrono::duration<double>{endSolve - start};
-
-        if (useRevisitedAlgo && std::fabs(cmax1-cmax3) > 1E-6)
+        time_elapsed_revisited_johnson = std::chrono::duration<double>{endSolve - start};
+        if (useRevisitedAlgo && std::fabs(cmax1-cmax3) > 1E-6) {
             throw F2CmaxException(("Not same Cmax: revisited ->" + std::to_string(cmax1) + " johnson: " + std::to_string(cmax3)).c_str());
+        }
+
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
         bool conditionProp3 = instance->getSumPb1() <= instance->getSumPb2() - instance->getPMaxB();
         bool conditionProp5 = instance->getSumPa1()+instance->getSumPb2() <= instance->getSumPa2() + instance->getSumPb1() - std::max(instance->getPMaxA(),instance->getPMaxB());
@@ -132,8 +132,7 @@ public:
         bool conditionProp6 = instance->getSumPa2() + instance->getSumPb1() <= instance->getSumPa1()+instance->getSumPb2() - std::max(instance->getPMaxA(),instance->getPMaxB());
         if (conditionProp5) {
             //with version using pivot
-            // size_t k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
-            size_t k_a = find_smallest_k(instance->getJobsSmallerOnM1());
+            size_t k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
             if (static_cast<double>(k_a) * std::log(static_cast<double>(k_a)) <= static_cast<double>(instance->getNbJobs())) {
                 // sort the beginning until the pivot
                 std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().begin() + k_a);
@@ -145,10 +144,8 @@ public:
         }
         if (conditionProp6) {
             //with version using pivot
-            // size_t k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
-            size_t k_b = find_smallest_k(instance->getJobsSmallerOnM2());
-            double k_b_p =static_cast<double>( instance->getNbJobs() - k_b + 1);
-            if (k_b_p * std::log(k_b_p) <= static_cast<double>(instance->getNbJobs())) {
+            size_t k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
+            if (k_b * std::log(k_b) <= static_cast<double>(instance->getNbJobs())) {
                 // sort the beginning until the pivot
                 std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().begin() + k_b);
             }else {
@@ -166,8 +163,7 @@ public:
         size_t k_b = 0;
         if (conditionProp2) {
             //with version using pivot
-            // k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
-            k_a = find_smallest_k(instance->getJobsSmallerOnM1());
+            k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
             if (static_cast<double>(k_a) * std::log(static_cast<double>(k_a)) <= static_cast<double>(instance->getNbJobs())) {
                 // sort the beginning until the pivot
                 std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().begin() + k_a);
@@ -178,10 +174,8 @@ public:
         }
         if (conditionProp3) {
             //with version using pivot
-            // k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
-            k_b = find_smallest_k(instance->getJobsSmallerOnM2());
-            double k_b_p =static_cast<double>( instance->getNbJobs() - k_b + 1);
-            if (k_b_p * std::log(k_b_p) <= static_cast<double>(instance->getNbJobs())) {
+            k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
+            if (k_b * std::log(k_b) <= static_cast<double>(instance->getNbJobs())) {
                 // sort the beginning until the pivot
                 std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().begin() + k_b);
             }else {
@@ -195,67 +189,37 @@ public:
      * Method that evaluate a solution
      */
     double evaluate() {
-        std::vector<double> listCompletionTimeM1(instance->getNbJobs(), 0.0);
-        std::vector<double> listCompletionTimeM2(instance->getNbJobs(), 0.0);
-        size_t indexLoopCj = 0;
-        for (auto &job : instance->getJobsSmallerOnM1()) {
-            indexLoopCj == 0 ? listCompletionTimeM1[indexLoopCj] = job.first : listCompletionTimeM1[indexLoopCj] = job.first + listCompletionTimeM1[indexLoopCj-1];
-            listCompletionTimeM2[indexLoopCj] = indexLoopCj == 0 ? job.second + listCompletionTimeM1[indexLoopCj] : job.second + std::max(listCompletionTimeM1[indexLoopCj],listCompletionTimeM2[indexLoopCj-1]);
-            ++indexLoopCj;
-        }
-        // loop through job in M2 in reverse order, because we use the reverse property (inverse also the processing time use)
-        for (auto &job : std::ranges::reverse_view(instance->getJobsSmallerOnM2())) {
-            indexLoopCj == 0 ? listCompletionTimeM1[indexLoopCj] = job.second : listCompletionTimeM1[indexLoopCj] = job.second + listCompletionTimeM1[indexLoopCj-1];
-            listCompletionTimeM2[indexLoopCj] = indexLoopCj == 0 ? job.first + listCompletionTimeM1[indexLoopCj] : job.first + std::max(listCompletionTimeM1[indexLoopCj],listCompletionTimeM2[indexLoopCj-1]);
-            ++indexLoopCj;
-        }
-        assert(std::is_sorted(listCompletionTimeM1.begin(),listCompletionTimeM1.end()));
-        assert(std::is_sorted(listCompletionTimeM2.begin(),listCompletionTimeM2.end()));
-        return listCompletionTimeM2.back();
-    }
+        double timeM1 = 0.0;
+        double timeM2 = 0.0;
 
-    size_t find_smallest_k(std::vector<Instance::Job> & listJobs) {
-        // take the 10th jobs
-        double estimated_pj = std::ceil(instance->getPMax() / instance->getNbJobs() * 10);
-        // split the list of jobs in two, those with a pj smaller than the estimate one and the other
-        Instance::Job pivot_Job = {estimated_pj,estimated_pj};
-        size_t loopIndexBegin = 0;
-        size_t loopIndexEnd = listJobs.size()-1;
-        while (loopIndexEnd > 0 && loopIndexBegin <= loopIndexEnd) {
-            assert(loopIndexBegin < listJobs.size());
-            assert(loopIndexEnd < listJobs.size());
-            if (listJobs[loopIndexBegin].first < pivot_Job.first) loopIndexBegin++;
-            else if (listJobs[loopIndexEnd].first > pivot_Job.first) loopIndexEnd--;
-            else {
-                std::swap(listJobs[loopIndexBegin],listJobs[loopIndexEnd]);
-                loopIndexBegin++;
-                loopIndexEnd--;
-            }
+        // Phase 1: Jobs where p_i1 < p_i2
+        for (const auto &job : instance->getJobsSmallerOnM1()) {
+            timeM1 += job.first;
+            timeM2 = std::max(timeM1, timeM2) + job.second;
         }
-        return loopIndexEnd + 1; //return the position of the pivot
+
+        // Phase 2: Jobs where p_i1 >= p_i2 (processed in reverse per Johnson's Rule logic)
+        // Note: Per your logic, we swap the roles of first and second here
+        for (const auto &job : std::ranges::reverse_view(instance->getJobsSmallerOnM2())) {
+            timeM1 += job.second;
+            timeM2 = std::max(timeM1, timeM2) + job.first;
+        }
+
+        return timeM2;
     }
 
     size_t find_smallest_k(std::vector<Instance::Job> & listJobs,SIDE side) {
-        size_t pivot_t_minus_1 = 0;
-        size_t startIndex = 0;
-        size_t endIndex = listJobs.size()-1;
-        size_t pivot_t = BFPRTPivot(listJobs,startIndex,endIndex);
-        while (pivot_t != pivot_t_minus_1) {
-            pivot_t_minus_1 = pivot_t;
-            if (pivotRule == BFPRT) {
-                // check if property 2 is hold
-                if (property_2_holds(listJobs,startIndex,pivot_t,side)) {
-                    //if pivot is 10 we stop
-                    if (pivot_t <= 10) break;
-                    endIndex = pivot_t;
-                    pivot_t = BFPRTPivot(listJobs,startIndex,endIndex);
-                }else {
-                    pivot_t = BFPRTPivot(listJobs,pivot_t,endIndex);;
-                    endIndex = pivot_t;
-                }
-            }
+        double estimated_pj = std::ceil(instance->getPMax() / instance->getNbJobs() * 10);
+        auto it = listJobs.begin();
+        auto pivot = 0;
+        while (not property_2_holds(listJobs,0,pivot,side)) {
+            it = std::partition(listJobs.begin(), listJobs.end(), [estimated_pj](const Instance::Job& job) {
+                return job.first <= estimated_pj;
+            });
+            pivot = std::distance(listJobs.begin(),it);
+            estimated_pj *= 2.0;
         }
-        return pivot_t;
+        return pivot;
     }
 
 
