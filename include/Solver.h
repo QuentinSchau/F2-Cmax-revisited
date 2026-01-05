@@ -50,18 +50,20 @@ public:
         }
         auto start = std::chrono::steady_clock::now();
         if (useRevisitedAlgo) revisitedAlgorithm();
+        auto cmax1 = evaluate();
         auto endSolve{std::chrono::steady_clock::now()};
         time_elapsed_revisited_johnson = std::chrono::duration<double>{endSolve - start};
-        auto cmax1 = evaluate();
+
 
         // shuffle list jobs to start from scratch
         std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
         std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
         start = std::chrono::steady_clock::now();
         JohnsonAlgorithm();
+        auto cmax3 = evaluate();
         endSolve = std::chrono::steady_clock::now();
         time_elapsed_johnson = std::chrono::duration<double>{endSolve - start};
-        auto cmax3 = evaluate();
+
         if (useRevisitedAlgo && std::fabs(cmax1-cmax3) > 1E-6)
             throw F2CmaxException(("Not same Cmax: revisited ->" + std::to_string(cmax1) + " johnson: " + std::to_string(cmax3)).c_str());
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
