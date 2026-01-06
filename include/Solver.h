@@ -57,9 +57,9 @@ public:
             std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
             std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
         }
+        double cmax1 = 0.0;
         start = std::chrono::steady_clock::now();
-        if (useRevisitedAlgo) revisitedAlgorithm();
-        auto cmax1 = evaluate();
+        if (useRevisitedAlgo) cmax1 = revisitedAlgorithm();
         endSolve = std::chrono::steady_clock::now();
         time_elapsed_revisited_johnson = std::chrono::duration<double>{endSolve - start};
         if (useRevisitedAlgo && std::fabs(cmax1-cmax3) > 1E-6) {
@@ -124,7 +124,7 @@ public:
         std::sort(jobsM2.begin(),jobsM2.end(),[](auto &jobLeft,auto &jobRight){return jobLeft.first < jobRight.first;});
     }
 
-    void revisitedAlgorithm() {
+    double revisitedAlgorithm() {
         // Attention, on set B, we work with reverse flo shop instance, i.e. all jobs on machine M1 are in fact on machine M2 and vice versa.
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
         bool conditionProp3 = instance->getSumPb1() <= instance->getSumPb2() - instance->getPMaxB();
@@ -140,7 +140,19 @@ public:
                 //sort all the machine
                 std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end());
             }
-            return;
+            double timeM1 = 0.0;
+            double timeM2 = 0.0;
+            for (auto itJob  = instance->getJobsSmallerOnM1().begin(); itJob != instance->getJobsSmallerOnM1().begin() + k_a; itJob++) {
+                timeM1 += itJob->first;
+                timeM2 = std::max(timeM1, timeM2) + itJob->second;
+            }
+            for (auto itJob = instance->getJobsSmallerOnM1().begin() + k_a; itJob != instance->getJobsSmallerOnM1().end(); itJob++) {
+                timeM2 += itJob->second;
+            }
+            for (auto itJob = instance->getJobsSmallerOnM2().rbegin(); itJob != instance->getJobsSmallerOnM2().rend(); itJob++){
+                timeM2 += itJob->first;
+            }
+            return timeM2;
         }
         if (conditionProp6) {
             //with version using pivot
@@ -152,15 +164,31 @@ public:
                 //sort all the machine
                 std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end());
             }
-            return;
+            // here we compute the makespan but on the reverse instance (based on the reversibility property)
+            double timeM1 = 0.0;
+            double timeM2 = 0.0;
+            for (auto itJob  = instance->getJobsSmallerOnM2().begin(); itJob != instance->getJobsSmallerOnM2().begin() + k_b; itJob++) {
+                timeM1 += itJob->first;
+                timeM2 = std::max(timeM1, timeM2) + itJob->second;
+            }
+            for (auto itJob = instance->getJobsSmallerOnM2().begin() + k_b; itJob != instance->getJobsSmallerOnM2().end(); itJob++) {
+                timeM2 += itJob->second;
+            }
+            for (auto itJob = instance->getJobsSmallerOnM1().rbegin(); itJob != instance->getJobsSmallerOnM1().rend(); itJob++){
+                timeM2 += itJob->first;
+            }
+            return timeM2;
         }
         if (not conditionProp2 && not conditionProp3) {
             //sort both
             std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end());
             std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end());
+            return evaluate();
         }
-        size_t k_a = 0;
-        size_t k_b = 0;
+        size_t k_a = instance->getJobsSmallerOnM1().size();
+        size_t k_b = instance->getJobsSmallerOnM2().size();
+        double timeM1 = 0.0;
+        double timeM2 = 0.0;
         if (conditionProp2) {
             //with version using pivot
             k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
@@ -171,6 +199,15 @@ public:
                 //sort all the machine
                 std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end());
             }
+        }
+        //compute Cj on set A
+        for (auto itJob  = instance->getJobsSmallerOnM1().begin(); itJob != instance->getJobsSmallerOnM1().begin() + k_a; itJob++) {
+            timeM1 += itJob->first;
+            timeM2 = std::max(timeM1, timeM2) + itJob->second;
+        }
+        for (auto itJob = instance->getJobsSmallerOnM1().begin() + k_a; itJob != instance->getJobsSmallerOnM1().end(); itJob++) {
+            timeM2 += itJob->second;
+            timeM1 += itJob->first;
         }
         if (conditionProp3) {
             //with version using pivot
@@ -183,6 +220,16 @@ public:
                 std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end());
             }
         }
+        //compute Cj on set B
+        for (auto itJob = instance->getJobsSmallerOnM2().begin() + k_b; itJob != instance->getJobsSmallerOnM2().end(); itJob++) {
+            timeM2 += itJob->first;
+            timeM1 += itJob->second;
+        }
+        for (auto itJob  = instance->getJobsSmallerOnM2().rbegin() + instance->getJobsSmallerOnM2().size() - k_b; itJob != instance->getJobsSmallerOnM2().rend(); itJob++) {
+            timeM1 += itJob->second;
+            timeM2 = std::max(timeM1, timeM2) + itJob->first;
+        }
+        return timeM2;
     }
 
     /**
