@@ -39,6 +39,7 @@ public:
     typedef std::pair<double,double> Job;
 
 private:
+    std::vector<Job> listJobs;
     double supPj = 100.0;
     std::string instanceName;
     std::filesystem::path instancePath; // the path to the instance
@@ -70,10 +71,25 @@ public:
      */
     explicit Instance(std::string &newInstancePath);
 
+    /**
+     * Method that swap machine if we have P1 > P2
+     */
+    void swapMachines() {
+        std::swap(jobsSmallerOnM2,jobsSmallerOnM1);
+        std::swap(sumPA1,sumPA2);
+        std::swap(sumPB1,sumPB2);
+        std::swap(p_max_A,p_max_B);
+    }
+
     void clearListJobs() {
         jobsSmallerOnM1.clear(); jobsSmallerOnM2.clear();
     }
+
     void addJob(double pi1, double pi2) {
+        listJobs.emplace_back(pi1, pi2);
+    }
+
+    void addJobOnMachines(double pi1, double pi2) {
         p_max = std::max(p_max,std::max(pi1,pi2));
         if (pi1<pi2) {
             p_max_A = std::max(p_max_A,pi1);
@@ -104,14 +120,16 @@ public:
     [[nodiscard]] unsigned int getNbJobs() const { return nbJobs; }
     [[nodiscard]] double getSupPj() const { return supPj; }
 
-    [[nodiscard]] double getPMaxA() const { return p_max_A; }
-    [[nodiscard]] double getPMaxB() const { return p_max_B; }
+    [[nodiscard]] double getPMaxA() { return p_max_A; }
+    [[nodiscard]] double getPMaxB() { return p_max_B; }
     [[nodiscard]] double getPMax() const { return p_max; }
 
-    [[nodiscard]] double getSumPa1() const { return sumPA1; }
-    [[nodiscard]] double getSumPa2() const { return sumPA2; }
-    [[nodiscard]] double getSumPb1() const { return sumPB1; }
-    [[nodiscard]] double getSumPb2() const { return sumPB2; }
+    [[nodiscard]] double getSumPa1() { return sumPA1; }
+    [[nodiscard]] double getSumPa2() { return sumPA2; }
+    [[nodiscard]] double getSumPb1() { return sumPB1; }
+    [[nodiscard]] double getSumPb2() { return sumPB2; }
+
+    [[nodiscard]] std::vector<Job> getListJobs() const { return listJobs; }
 
     [[nodiscard]] std::vector<Job> & getJobsSmallerOnM1() { return jobsSmallerOnM1; }
     [[nodiscard]] std::vector<Job> & getJobsSmallerOnM2() { return jobsSmallerOnM2; }
@@ -156,9 +174,13 @@ public:
 
     void setNbJobs(unsigned int nbJobs) {
         this->nbJobs = nbJobs;
+        listJobs.reserve(nbJobs);
         jobsSmallerOnM1.reserve(nbJobs);
         jobsSmallerOnM2.reserve(nbJobs);
     }
+
+    void setJobsSmallerOnM1(const std::vector<Job>& jobsSmallerOnM1) { this->jobsSmallerOnM1 = jobsSmallerOnM1; }
+    void setJobsSmallerOnM2(const std::vector<Job>& jobsSmallerOnM2) { this->jobsSmallerOnM2 = jobsSmallerOnM2; }
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Instance &instance) {

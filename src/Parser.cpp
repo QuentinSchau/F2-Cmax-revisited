@@ -53,7 +53,7 @@ Instance Parser::readFromFile(std::string &filePath) const {
     fileStream.close();
 
     // check if we have the right number of created job
-    if (newInstance.getNbJobs() != newInstance.getJobsSmallerOnM1().size()+newInstance.getJobsSmallerOnM2().size())
+    if (newInstance.getNbJobs() != newInstance.getListJobs().size())
         throw std::invalid_argument("The number of jobs is not equals to n");
     return newInstance;
 }

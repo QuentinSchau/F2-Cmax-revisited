@@ -43,14 +43,24 @@ public:
     explicit Solver(Instance* instance,bool useRevisitedAlgo) : instance(instance),useRevisitedAlgo(useRevisitedAlgo), time_elapsed_johnson(0),time_elapsed_revisited_johnson(0), pivotRule(BFPRT) {}
 
     void solve() {
+        auto start = std::chrono::steady_clock::now();
+        for (auto &[pi1,pi2] : instance->getListJobs() )
+            instance->addJobOnMachines(pi1,pi2);
+
+        if (instance->getSumPa1()+instance->getSumPb2() > instance->getSumPa2() + instance->getSumPb1()) {
+            instance->swapMachines();
+        }
+        auto endSolve{std::chrono::steady_clock::now()};
+        setTimeElapsed(endSolve - start);
+
         // shuffle list jobs to start from scratch
         std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
         std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
-        auto start = std::chrono::steady_clock::now();
+        start = std::chrono::steady_clock::now();
         JohnsonAlgorithm();
         auto cmax3 = evaluate();
-        auto endSolve{std::chrono::steady_clock::now()};
-        time_elapsed_johnson = std::chrono::duration<double>{endSolve - start};
+        endSolve = std::chrono::steady_clock::now();
+        time_elapsed_johnson += std::chrono::duration<double>{endSolve - start};
 
         if (useRevisitedAlgo) {
             // // shuffle list jobs to start from scratch
@@ -61,7 +71,7 @@ public:
         start = std::chrono::steady_clock::now();
         if (useRevisitedAlgo) cmax1 = revisitedAlgorithm();
         endSolve = std::chrono::steady_clock::now();
-        time_elapsed_revisited_johnson = std::chrono::duration<double>{endSolve - start};
+        time_elapsed_revisited_johnson += std::chrono::duration<double>{endSolve - start};
         if (useRevisitedAlgo && std::fabs(cmax1-cmax3) > 1E-6) {
             throw F2CmaxException(("Not same Cmax: revisited ->" + std::to_string(cmax1) + " johnson: " + std::to_string(cmax3)).c_str());
         }
@@ -69,13 +79,9 @@ public:
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
         bool conditionProp3 = instance->getSumPb1() <= instance->getSumPb2() - instance->getPMaxB();
         bool conditionProp5 = instance->getSumPa1()+instance->getSumPb2() <= instance->getSumPa2() + instance->getSumPb1() - std::max(instance->getPMaxA(),instance->getPMaxB());
-        bool conditionProp6 = instance->getSumPa2() + instance->getSumPb1() <= instance->getSumPa1()+instance->getSumPb2() - std::max(instance->getPMaxA(),instance->getPMaxB());
         if (conditionProp5) {
             auto [k_a,k_a_p] = compute_k_index(A);
             metrics = {5,k_a,k_a_p,0,0,0};
-        }else if (conditionProp6) {
-            auto [k_b,k_b_p] = compute_k_index(B);
-            metrics = {0,0,0,6,k_b,k_b_p};
         }else {
             if (conditionProp2) {
                 auto [k_a,k_a_p] = compute_k_index(A);
@@ -142,16 +148,13 @@ public:
             }
             double timeM1 = 0.0;
             double timeM2 = 0.0;
+            double sumPjOnM2UntilKa = 0.0;
             for (auto itJob  = instance->getJobsSmallerOnM1().begin(); itJob != instance->getJobsSmallerOnM1().begin() + k_a; itJob++) {
                 timeM1 += itJob->first;
                 timeM2 = std::max(timeM1, timeM2) + itJob->second;
+                sumPjOnM2UntilKa += itJob->second;
             }
-            for (auto itJob = instance->getJobsSmallerOnM1().begin() + k_a; itJob != instance->getJobsSmallerOnM1().end(); itJob++) {
-                timeM2 += itJob->second;
-            }
-            for (auto itJob = instance->getJobsSmallerOnM2().rbegin(); itJob != instance->getJobsSmallerOnM2().rend(); itJob++){
-                timeM2 += itJob->first;
-            }
+            timeM2 = timeM2 + instance->getSumPa2() + instance->getSumPb1() - sumPjOnM2UntilKa;
             return timeM2;
         }
         if (conditionProp6) {
@@ -201,14 +204,13 @@ public:
             }
         }
         //compute Cj on set A
+        double sumPjOnM2UntilK_a = 0.0;
         for (auto itJob  = instance->getJobsSmallerOnM1().begin(); itJob != instance->getJobsSmallerOnM1().begin() + k_a; itJob++) {
             timeM1 += itJob->first;
             timeM2 = std::max(timeM1, timeM2) + itJob->second;
+            sumPjOnM2UntilK_a += itJob->second;
         }
-        for (auto itJob = instance->getJobsSmallerOnM1().begin() + k_a; itJob != instance->getJobsSmallerOnM1().end(); itJob++) {
-            timeM2 += itJob->second;
-            timeM1 += itJob->first;
-        }
+
         if (conditionProp3) {
             //with version using pivot
             k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
@@ -221,13 +223,18 @@ public:
             }
         }
         //compute Cj on set B
-        for (auto itJob = instance->getJobsSmallerOnM2().begin() + k_b; itJob != instance->getJobsSmallerOnM2().end(); itJob++) {
-            timeM2 += itJob->first;
-            timeM1 += itJob->second;
+        double sumPjOnM1UntilK_b = 0.0;
+        double sumPjOnM2UntilK_b = 0.0;
+        for (auto itJob = instance->getJobsSmallerOnM2().begin(); itJob != instance->getJobsSmallerOnM2().begin() + k_b; itJob++) {
+            sumPjOnM2UntilK_b += itJob->first;
+            sumPjOnM1UntilK_b += itJob->second;
         }
-        for (auto itJob  = instance->getJobsSmallerOnM2().rbegin() + instance->getJobsSmallerOnM2().size() - k_b; itJob != instance->getJobsSmallerOnM2().rend(); itJob++) {
-            timeM1 += itJob->second;
-            timeM2 = std::max(timeM1, timeM2) + itJob->first;
+        timeM1 = instance->getSumPa1() + instance->getSumPb2() - sumPjOnM1UntilK_b;
+        timeM2 += instance->getSumPa2() + instance->getSumPb1() - sumPjOnM2UntilK_a - sumPjOnM2UntilK_b;
+        unsigned int indexLoopK_Bjobs = k_b;
+        while (indexLoopK_Bjobs-->0) {
+            timeM1 += instance->getJobsSmallerOnM2()[indexLoopK_Bjobs].second;
+            timeM2 = std::max(timeM1, timeM2) + instance->getJobsSmallerOnM2()[indexLoopK_Bjobs].first;
         }
         return timeM2;
     }
@@ -356,6 +363,11 @@ public:
     /********************/
     /*      SETTER      */
     /********************/
+
+    void setTimeElapsed(const std::chrono::duration<double> &time_elapsed) {
+        time_elapsed_johnson = time_elapsed;
+        time_elapsed_revisited_johnson = time_elapsed;
+    }
 
     void setStrategy(std::string pivotName) {
         if (pivotName == "BFPRT") pivotRule = BFPRT;

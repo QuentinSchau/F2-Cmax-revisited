@@ -85,12 +85,12 @@ set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 20)
 # ---------------------------------------------------------
 # Our F2Cmax Lib LIBRAIRY
 # ---------------------------------------------------------
-add_library(libF2Cmax STATIC ${SRCS_F2_Cmax}) # add the library to the sources
-add_dependencies(${PROJECT} libF2Cmax) # PROJECT depends on LIB_NAME
-set_property(TARGET libF2Cmax PROPERTY CXX_STANDARD 20)
+add_library(F2Cmax STATIC ${SRCS_F2_Cmax}) # add the library to the sources
+add_dependencies(${PROJECT} F2Cmax) # PROJECT depends on LIB_NAME
+set_property(TARGET F2Cmax PROPERTY CXX_STANDARD 20)
 
 #  Specify the output directory for the library file (.a)
-set_target_properties(libF2Cmax PROPERTIES
+set_target_properties(F2Cmax PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${LIB_OUTPUT_DIR}
 )
 
@@ -112,13 +112,13 @@ add_subdirectory(${LIB_PATH}/json-3.11.3)
 
 # specify target link of F2_Cmax
 
-target_link_libraries(libF2Cmax
+target_link_libraries(F2Cmax
         nlohmann_json::nlohmann_json
 )
 # add link for library
 target_link_libraries(${PROJECT}
-        debug libF2Cmax
-        optimized libF2Cmax
+        debug F2Cmax
+        optimized F2Cmax
 )
 #need to specify the library's header file location.
 target_include_directories(${PROJECT} PUBLIC
