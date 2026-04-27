@@ -27,52 +27,105 @@
 #include <random>
 
 #include "Instance.h"
+#include "RadixSort.h"
 
 enum PIVOT_RULE{BFPRT};
 class Solver {
     Instance * instance = nullptr;
     bool useRevisitedAlgo = true;
-    std::chrono::duration<double> time_elapsed_johnson;
+    std::chrono::duration<double> time_elapsed_johnson_STL;
+    std::chrono::duration<double> time_elapsed_johnson_RADIX;
+    std::chrono::duration<double> time_elapsed_evaluating_johnson_STL;
+    std::chrono::duration<double> time_elapsed_evaluating_johnson_RADIX;
     std::chrono::duration<double> time_elapsed_revisited_johnson;
+    std::chrono::duration<double> time_elapsed_evaluating_revisited_johnson;
     enum SIDE{A,B};
     PIVOT_RULE pivotRule;
     // metrics where e have ppt1, k_a, ppt2, k_b
     std::tuple<size_t,size_t,size_t,size_t,size_t,size_t> metrics;
     double objective;
 public:
-    explicit Solver(Instance* instance,bool useRevisitedAlgo) : instance(instance),useRevisitedAlgo(useRevisitedAlgo), time_elapsed_johnson(0),time_elapsed_revisited_johnson(0), pivotRule(BFPRT) {}
+    explicit Solver(Instance* instance,bool useRevisitedAlgo) : instance(instance),useRevisitedAlgo(useRevisitedAlgo), time_elapsed_johnson_STL(0),time_elapsed_revisited_johnson(0), pivotRule(BFPRT) {}
 
     void solve() {
+        instance->getJobsSmallerOnM1().reserve(instance->getNbJobs());
+        instance->getJobsSmallerOnM2().reserve(instance->getNbJobs());
+
+        // Johnson Algorithm with STL
+        // Measure time to compute set A and B and compute optimal solution
         auto start = std::chrono::steady_clock::now();
         for (auto &[pi1,pi2] : instance->getListJobs() )
-            instance->addJobOnMachines(pi1,pi2);
-
-        if (instance->getSumPa1()+instance->getSumPb2() > instance->getSumPa2() + instance->getSumPb1()) {
-            instance->swapMachines();
-        }
-        auto endSolve{std::chrono::steady_clock::now()};
-        setTimeElapsed(endSolve - start);
+            instance->addJobOnMachinesJohnson(pi1,pi2);
+        auto endSolve = std::chrono::steady_clock::now();
+        time_elapsed_johnson_STL = std::chrono::duration<double>{endSolve - start};
 
         // shuffle list jobs to start from scratch
         std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
         std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
         start = std::chrono::steady_clock::now();
-        JohnsonAlgorithm();
+        JohnsonAlgorithmSTL();
+        endSolve = std::chrono::steady_clock::now();
+        time_elapsed_johnson_STL = std::chrono::duration<double>{endSolve - start};
+
+        // Measure time to evaluate optimal solution
+        start = std::chrono::steady_clock::now();
+        auto cmax2 = evaluate();
+        endSolve = std::chrono::steady_clock::now();
+        time_elapsed_evaluating_johnson_STL = std::chrono::duration<double>{endSolve - start};
+
+        // Johnson Algorithm with RADIX
+        // Measure time to compute set A and B and compute optimal solution
+        start = std::chrono::steady_clock::now();
+        instance->clearListJobs();
+        for (auto &[pi1,pi2] : instance->getListJobs() )
+            instance->addJobOnMachinesJohnson(pi1,pi2);
+        endSolve = std::chrono::steady_clock::now();
+        time_elapsed_johnson_RADIX = std::chrono::duration<double>{endSolve - start};
+
+        // shuffle list jobs to start from scratch
+        std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
+        std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
+        start = std::chrono::steady_clock::now();
+        JohnsonAlgorithmRadix();
+        endSolve = std::chrono::steady_clock::now();
+        time_elapsed_johnson_RADIX = std::chrono::duration<double>{endSolve - start};
+
+        // Measure time to evaluate optimal solution
+        start = std::chrono::steady_clock::now();
         auto cmax3 = evaluate();
         endSolve = std::chrono::steady_clock::now();
-        time_elapsed_johnson += std::chrono::duration<double>{endSolve - start};
-
+        time_elapsed_evaluating_johnson_RADIX = std::chrono::duration<double>{endSolve - start};
+        double cmax1 = 0.0;
         if (useRevisitedAlgo) {
-            // // shuffle list jobs to start from scratch
+            // Clear instance
+            instance->clearListJobs();
+
+            // Revisited Johnson Algorithm
+            for (auto &[pi1,pi2] : instance->getListJobs() )
+                instance->addJobOnMachinesJohnson(pi1,pi2);
+            // Measure time to compute set A and B and compute optimal solution.
+            start = std::chrono::steady_clock::now();
+            instance->addJobOnMachinesRevisitedJohnson();
+            endSolve = std::chrono::steady_clock::now();
+            time_elapsed_revisited_johnson = std::chrono::duration<double>{endSolve - start};
+            if (instance->getSumPa1()+instance->getSumPb2() > instance->getSumPa2() + instance->getSumPb1()) {
+                instance->swapMachines();
+            }
+            // shuffle list jobs to start from scratch
             std::shuffle(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end(), std::mt19937(std::random_device()()));
             std::shuffle(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end(), std::mt19937(std::random_device()()));
+            start = std::chrono::steady_clock::now();
+            RevisitedJohnsonAlgorithm();
+            endSolve = std::chrono::steady_clock::now();
+            time_elapsed_revisited_johnson += std::chrono::duration<double>{endSolve - start};
+
+            // Measure time to evaluate optimal solution
+            start = std::chrono::steady_clock::now();
+            cmax1 = EvaluateRevisitedAlgorithm();
+            endSolve = std::chrono::steady_clock::now();
+            time_elapsed_evaluating_revisited_johnson = std::chrono::duration<double>{endSolve - start};
         }
-        double cmax1 = 0.0;
-        start = std::chrono::steady_clock::now();
-        if (useRevisitedAlgo) cmax1 = revisitedAlgorithm();
-        endSolve = std::chrono::steady_clock::now();
-        time_elapsed_revisited_johnson += std::chrono::duration<double>{endSolve - start};
-        if (useRevisitedAlgo && std::fabs(cmax1-cmax3) > 1E-6) {
+        if (useRevisitedAlgo && (std::fabs(cmax1-cmax3) > 1E-6 || std::fabs(cmax1-cmax2) > 1E-6 || std::fabs(cmax2-cmax3) > 1E-6)) {
             throw F2CmaxException(("Not same Cmax: revisited ->" + std::to_string(cmax1) + " johnson: " + std::to_string(cmax3)).c_str());
         }
 
@@ -123,14 +176,53 @@ public:
         return {k,k_p+1};
     }
 
-    void JohnsonAlgorithm() {
+    void JohnsonAlgorithmRadix() {
+        auto &jobsM1 = instance->getJobsSmallerOnM1();
+        radixsort_by_first(jobsM1);
+        auto &jobsM2 = instance->getJobsSmallerOnM2();
+        radixsort_by_first(jobsM2);
+    }
+
+    void JohnsonAlgorithmSTL() {
         auto &jobsM1 = instance->getJobsSmallerOnM1();
         std::sort(jobsM1.begin(),jobsM1.end(),[](auto &jobLeft,auto &jobRight){return jobLeft.first < jobRight.first;});
         auto &jobsM2 = instance->getJobsSmallerOnM2();
         std::sort(jobsM2.begin(),jobsM2.end(),[](auto &jobLeft,auto &jobRight){return jobLeft.first < jobRight.first;});
     }
+    
+    void RevisitedJohnsonAlgorithm() {
+        // Attention, on set B, we work with reverse flo shop instance, i.e. all jobs on machine M1 are in fact on machine M2 and vice versa.
+        bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
+        bool conditionProp3 = instance->getSumPb1() <= instance->getSumPb2() - instance->getPMaxB();
+        bool conditionProp5 = instance->getSumPa1()+instance->getSumPb2() <= instance->getSumPa2() + instance->getSumPb1() - std::max(instance->getPMaxA(),instance->getPMaxB());
+        bool conditionProp6 = instance->getSumPa2() + instance->getSumPb1() <= instance->getSumPa1()+instance->getSumPb2() - std::max(instance->getPMaxA(),instance->getPMaxB());
+        if (conditionProp5) {
+            //with version using pivot
+            size_t k_a = find_smallest_k_and_sort(instance->getJobsSmallerOnM1(),A);
+            std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().begin() + k_a);
+        } else if (conditionProp6) {
+            //with version using pivot
+            size_t k_b = find_smallest_k_and_sort(instance->getJobsSmallerOnM2(),B);
+            std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().begin() + k_b);
+        } else if (not conditionProp2 && not conditionProp3) {
+            //sort both
+            std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end());
+            std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end());
+        }else {
+            if (conditionProp2) {
+                //with version using pivot
+                size_t k_a = find_smallest_k_and_sort(instance->getJobsSmallerOnM1(),A);
+                std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().begin() + k_a);
+            }
+            if (conditionProp3) {
+                //with version using pivot
+                size_t k_b = find_smallest_k_and_sort(instance->getJobsSmallerOnM2(),B);
+                std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().begin() + k_b);
+            }
+        }
+    }
 
-    double revisitedAlgorithm() {
+    double EvaluateRevisitedAlgorithm() {
         // Attention, on set B, we work with reverse flo shop instance, i.e. all jobs on machine M1 are in fact on machine M2 and vice versa.
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
         bool conditionProp3 = instance->getSumPb1() <= instance->getSumPb2() - instance->getPMaxB();
@@ -139,13 +231,6 @@ public:
         if (conditionProp5) {
             //with version using pivot
             size_t k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
-            if (static_cast<double>(k_a) * std::log(static_cast<double>(k_a)) <= static_cast<double>(instance->getNbJobs())) {
-                // sort the beginning until the pivot
-                std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().begin() + k_a);
-            }else {
-                //sort all the machine
-                std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end());
-            }
             double timeM1 = 0.0;
             double timeM2 = 0.0;
             double sumPjOnM2UntilKa = 0.0;
@@ -160,13 +245,6 @@ public:
         if (conditionProp6) {
             //with version using pivot
             size_t k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
-            if (k_b * std::log(k_b) <= static_cast<double>(instance->getNbJobs())) {
-                // sort the beginning until the pivot
-                std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().begin() + k_b);
-            }else {
-                //sort all the machine
-                std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end());
-            }
             // here we compute the makespan but on the reverse instance (based on the reversibility property)
             double timeM1 = 0.0;
             double timeM2 = 0.0;
@@ -183,9 +261,6 @@ public:
             return timeM2;
         }
         if (not conditionProp2 && not conditionProp3) {
-            //sort both
-            std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end());
-            std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end());
             return evaluate();
         }
         size_t k_a = instance->getJobsSmallerOnM1().size();
@@ -195,13 +270,6 @@ public:
         if (conditionProp2) {
             //with version using pivot
             k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
-            if (static_cast<double>(k_a) * std::log(static_cast<double>(k_a)) <= static_cast<double>(instance->getNbJobs())) {
-                // sort the beginning until the pivot
-                std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().begin() + k_a);
-            }else {
-                //sort all the machine
-                std::sort(instance->getJobsSmallerOnM1().begin(), instance->getJobsSmallerOnM1().end());
-            }
         }
         //compute Cj on set A
         double sumPjOnM2UntilK_a = 0.0;
@@ -214,13 +282,6 @@ public:
         if (conditionProp3) {
             //with version using pivot
             k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
-            if (k_b * std::log(k_b) <= static_cast<double>(instance->getNbJobs())) {
-                // sort the beginning until the pivot
-                std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().begin() + k_b);
-            }else {
-                //sort all the machine
-                std::sort(instance->getJobsSmallerOnM2().begin(), instance->getJobsSmallerOnM2().end());
-            }
         }
         //compute Cj on set B
         double sumPjOnM1UntilK_b = 0.0;
@@ -262,8 +323,8 @@ public:
         return timeM2;
     }
 
-    size_t find_smallest_k(std::vector<Instance::Job> & listJobs,SIDE side) {
-        double estimated_pj = std::ceil(instance->getPMax() / instance->getNbJobs() * 10);
+    size_t find_smallest_k_and_sort(std::vector<Instance::Job> & listJobs,SIDE side) {
+        double estimated_pj = std::ceil(instance->getPMax() / instance->getNbJobs() * 20);
         auto it = listJobs.begin();
         auto pivot = 0;
         while (not property_2_holds(listJobs,0,pivot,side)) {
@@ -272,6 +333,14 @@ public:
             });
             pivot = std::distance(listJobs.begin(),it);
             estimated_pj *= 2.0;
+        }
+        return pivot;
+    }
+
+    size_t find_smallest_k(std::vector<Instance::Job> & listJobs,SIDE side) {
+        auto pivot = 10;
+        while (not property_2_holds(listJobs,0,pivot,side)) {
+            pivot *=2;
         }
         return pivot;
     }
@@ -365,7 +434,7 @@ public:
     /********************/
 
     void setTimeElapsed(const std::chrono::duration<double> &time_elapsed) {
-        time_elapsed_johnson = time_elapsed;
+        time_elapsed_johnson_STL = time_elapsed;
         time_elapsed_revisited_johnson = time_elapsed;
     }
 
@@ -386,8 +455,11 @@ public:
             << "\t" << "InstancePath"
             << "\t" << "n"
             << "\t" << "pmax"
-            << "\t" << "TimeJohnson";
-        if (useRevisitedAlgo) outputFile << "\t" << "TimeRevisitedJohnson";
+            << "\t" << "TimeJohnsonSTL"
+            << "\t" << "TimeEvaluateJohnsonSTL"
+            << "\t" << "TimeJohnsonRadix"
+            << "\t" << "TimeEvaluateJohnsonRadix";
+        if (useRevisitedAlgo) outputFile << "\t" << "TimeRevisitedJohnson" << "\t" << "TimeEvaluateRevisitedJohnson";
         outputFile
             << "\t" << "PptA"
             << "\t" << "K_a"
@@ -403,8 +475,11 @@ public:
                << "\t" << instance->getInstancePath().string()
                << "\t" << instance->getNbJobs()
                << "\t" << instance->getSupPj()
-               << "\t" << time_elapsed_johnson.count();
-                if (useRevisitedAlgo) outputFile << "\t" << time_elapsed_revisited_johnson.count();
+               << "\t" << time_elapsed_johnson_STL.count()
+               << "\t" << time_elapsed_evaluating_johnson_STL.count()
+               << "\t" << time_elapsed_johnson_RADIX.count()
+               << "\t" << time_elapsed_evaluating_johnson_RADIX.count();
+                if (useRevisitedAlgo) outputFile << "\t" << time_elapsed_revisited_johnson.count() << "\t" << time_elapsed_evaluating_revisited_johnson.count();
     outputFile
                << "\t" << ppt1
                << "\t" << k_a

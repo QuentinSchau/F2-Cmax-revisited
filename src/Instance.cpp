@@ -142,8 +142,8 @@ void Instance::generateInstance(nlohmann::json& paramInstance) {
     }
 
     // generate Jobs
-    jobsSmallerOnM1.reserve(nbJobs);
-    jobsSmallerOnM2.reserve(nbJobs);
+    listJobs.reserve(nbJobs);
+    listJobs.clear();
     for (unsigned int i = 0; i < nbJobs; ++i) {
         auto newJob = generateJob(infPi, supPi);
         addJob(newJob.first,newJob.second);

@@ -63,10 +63,8 @@ void Parser::serializeInstance(Instance &instance) {
     if (fileStream.is_open()) {
         fileStream << std::setprecision(5) << "name:" << instance.getInstanceName() << std::endl
                    << "n:" << instance.getNbJobs() << std::endl << "Jobs:" << std::endl;
-        for (auto &job: instance.getJobsSmallerOnM1()) {
+        for (auto &job: instance.getListJobs()) {
             fileStream << job.first << "\t" << job.second << std::endl;
-        }for (auto &job: instance.getJobsSmallerOnM2()) {
-            fileStream << job.second << "\t" << job.first << std::endl;
         }
     } else throw F2CmaxException(std::string("Can't open the file ").append(instance.getInstancePath().lexically_normal().string()).c_str());
     fileStream.close();

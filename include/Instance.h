@@ -83,25 +83,40 @@ public:
 
     void clearListJobs() {
         jobsSmallerOnM1.clear(); jobsSmallerOnM2.clear();
+        p_max_A = 0.0;
+        p_max_B = 0.0;
+        p_max = 0.0;
+        sumPA1 = 0.0;
+        sumPA2 = 0.0;
+        sumPB1 = 0.0;
+        sumPB2 = 0.0;
     }
 
     void addJob(double pi1, double pi2) {
         listJobs.emplace_back(pi1, pi2);
     }
 
-    void addJobOnMachines(double pi1, double pi2) {
-        p_max = std::max(p_max,std::max(pi1,pi2));
+    void addJobOnMachinesJohnson(double pi1, double pi2) {
         if (pi1<pi2) {
-            p_max_A = std::max(p_max_A,pi1);
-            sumPA1 += pi1;
-            sumPA2 += pi2;
             jobsSmallerOnM1.emplace_back(pi1,pi2);
         }
         else {
+            jobsSmallerOnM2.emplace_back(pi2,pi1); //add the job directly regarding the reverse property
+        }
+    }
+
+    void addJobOnMachinesRevisitedJohnson() {
+        for (auto & [pi1,pi2]: jobsSmallerOnM1) {
+            p_max = std::max(p_max,std::max(pi1,pi2));
+            p_max_A = std::max(p_max_A,pi1);
+            sumPA1 += pi1;
+            sumPA2 += pi2;
+        }
+        for (auto & [pi2,pi1]: jobsSmallerOnM2) {
+            p_max = std::max(p_max,std::max(pi1,pi2));
             p_max_B = std::max(p_max_B,pi2);
             sumPB1 += pi2;
             sumPB2 += pi1;
-            jobsSmallerOnM2.emplace_back(pi2,pi1); //add the job directly regarding the reverse property
         }
     }
 
