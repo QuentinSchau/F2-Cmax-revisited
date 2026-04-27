@@ -128,13 +128,20 @@ public:
         if (useRevisitedAlgo && (std::fabs(cmax1-cmax3) > 1E-6 || std::fabs(cmax1-cmax2) > 1E-6 || std::fabs(cmax2-cmax3) > 1E-6)) {
             throw F2CmaxException(("Not same Cmax: revisited ->" + std::to_string(cmax1) + " johnson: " + std::to_string(cmax3)).c_str());
         }
-
+        // compute the sum of pj etc if we do not already do it by using revisited algo.
+        if (not useRevisitedAlgo) {
+            instance->addJobOnMachinesRevisitedJohnson();
+        }
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
         bool conditionProp3 = instance->getSumPb1() <= instance->getSumPb2() - instance->getPMaxB();
         bool conditionProp5 = instance->getSumPa1()+instance->getSumPb2() <= instance->getSumPa2() + instance->getSumPb1() - std::max(instance->getPMaxA(),instance->getPMaxB());
+        bool conditionProp6 = instance->getSumPa2() + instance->getSumPb1() <= instance->getSumPa1()+instance->getSumPb2() - std::max(instance->getPMaxA(),instance->getPMaxB());
         if (conditionProp5) {
             auto [k_a,k_a_p] = compute_k_index(A);
             metrics = {5,k_a,k_a_p,0,0,0};
+        } else if (conditionProp6){
+            auto [k_b,k_b_p] = compute_k_index(B);
+            metrics = {0,0,0,6,k_b,k_b_p};
         }else {
             if (conditionProp2) {
                 auto [k_a,k_a_p] = compute_k_index(A);
