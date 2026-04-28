@@ -66,13 +66,11 @@ public:
         JohnsonAlgorithmSTL();
         endSolve = std::chrono::steady_clock::now();
         time_elapsed_johnson_STL = std::chrono::duration<double>{endSolve - start};
-
         // Measure time to evaluate optimal solution
         start = std::chrono::steady_clock::now();
         auto cmax2 = evaluate();
         endSolve = std::chrono::steady_clock::now();
         time_elapsed_evaluating_johnson_STL = std::chrono::duration<double>{endSolve - start};
-
         // Johnson Algorithm with RADIX
         // Measure time to compute set A and B and compute optimal solution
         start = std::chrono::steady_clock::now();
@@ -89,7 +87,6 @@ public:
         JohnsonAlgorithmRadix();
         endSolve = std::chrono::steady_clock::now();
         time_elapsed_johnson_RADIX = std::chrono::duration<double>{endSolve - start};
-
         // Measure time to evaluate optimal solution
         start = std::chrono::steady_clock::now();
         auto cmax3 = evaluate();
@@ -118,7 +115,6 @@ public:
             RevisitedJohnsonAlgorithm();
             endSolve = std::chrono::steady_clock::now();
             time_elapsed_revisited_johnson += std::chrono::duration<double>{endSolve - start};
-
             // Measure time to evaluate optimal solution
             start = std::chrono::steady_clock::now();
             cmax1 = EvaluateRevisitedAlgorithm();
@@ -196,7 +192,7 @@ public:
         auto &jobsM2 = instance->getJobsSmallerOnM2();
         std::sort(jobsM2.begin(),jobsM2.end(),[](auto &jobLeft,auto &jobRight){return jobLeft.first < jobRight.first;});
     }
-    
+
     void RevisitedJohnsonAlgorithm() {
         // Attention, on set B, we work with reverse flo shop instance, i.e. all jobs on machine M1 are in fact on machine M2 and vice versa.
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
@@ -233,11 +229,9 @@ public:
         // Attention, on set B, we work with reverse flo shop instance, i.e. all jobs on machine M1 are in fact on machine M2 and vice versa.
         bool conditionProp2 = instance->getSumPa1() <= instance->getSumPa2() - instance->getPMaxA();
         bool conditionProp3 = instance->getSumPb1() <= instance->getSumPb2() - instance->getPMaxB();
-        bool conditionProp5 = instance->getSumPa1()+instance->getSumPb2() <= instance->getSumPa2() + instance->getSumPb1() - std::max(instance->getPMaxA(),instance->getPMaxB());
-        bool conditionProp6 = instance->getSumPa2() + instance->getSumPb1() <= instance->getSumPa1()+instance->getSumPb2() - std::max(instance->getPMaxA(),instance->getPMaxB());
-        if (conditionProp5) {
+        if (instance->getSumPa1()+instance->getSumPb2() <= instance->getSumPa2() + instance->getSumPb1() - std::max(instance->getPMaxA(),instance->getPMaxB())) {
             //with version using pivot
-            size_t k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
+            size_t k_a = 10;
             double timeM1 = 0.0;
             double timeM2 = 0.0;
             double sumPjOnM2UntilKa = 0.0;
@@ -249,24 +243,6 @@ public:
             timeM2 = timeM2 + instance->getSumPa2() + instance->getSumPb1() - sumPjOnM2UntilKa;
             return timeM2;
         }
-        if (conditionProp6) {
-            //with version using pivot
-            size_t k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
-            // here we compute the makespan but on the reverse instance (based on the reversibility property)
-            double timeM1 = 0.0;
-            double timeM2 = 0.0;
-            for (auto itJob  = instance->getJobsSmallerOnM2().begin(); itJob != instance->getJobsSmallerOnM2().begin() + k_b; itJob++) {
-                timeM1 += itJob->first;
-                timeM2 = std::max(timeM1, timeM2) + itJob->second;
-            }
-            for (auto itJob = instance->getJobsSmallerOnM2().begin() + k_b; itJob != instance->getJobsSmallerOnM2().end(); itJob++) {
-                timeM2 += itJob->second;
-            }
-            for (auto itJob = instance->getJobsSmallerOnM1().rbegin(); itJob != instance->getJobsSmallerOnM1().rend(); itJob++){
-                timeM2 += itJob->first;
-            }
-            return timeM2;
-        }
         if (not conditionProp2 && not conditionProp3) {
             return evaluate();
         }
@@ -276,7 +252,7 @@ public:
         double timeM2 = 0.0;
         if (conditionProp2) {
             //with version using pivot
-            k_a = find_smallest_k(instance->getJobsSmallerOnM1(),A);
+            k_a = 10;
         }
         //compute Cj on set A
         double sumPjOnM2UntilK_a = 0.0;
@@ -288,7 +264,7 @@ public:
 
         if (conditionProp3) {
             //with version using pivot
-            k_b = find_smallest_k(instance->getJobsSmallerOnM2(),B);
+            k_b = 10;
         }
         //compute Cj on set B
         double sumPjOnM1UntilK_b = 0.0;
@@ -343,15 +319,6 @@ public:
         }
         return pivot;
     }
-
-    size_t find_smallest_k(std::vector<Instance::Job> & listJobs,SIDE side) {
-        auto pivot = 10;
-        while (not property_2_holds(listJobs,0,pivot,side)) {
-            pivot *=2;
-        }
-        return pivot;
-    }
-
 
     bool property_2_holds(std::vector<Instance::Job> & listJobs,size_t startIndex,size_t endIndex,SIDE side) {
         double sum_diff_pj = std::accumulate(listJobs.begin() + startIndex, listJobs.begin() + endIndex, 0.0, [](double sum,Instance::Job & job) {
